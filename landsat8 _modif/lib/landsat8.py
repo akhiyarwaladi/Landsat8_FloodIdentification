@@ -97,14 +97,14 @@ def reproject(input_dir, output_dir, projection, meta):
     ap.env.workspace = input_dir
 
     rasters = ap.ListRasters('*.TIF')
-    #ms_bands = [band for band in rasters if (band_nmbr(band) != None)]
+    ms_bands = [band for band in rasters if (band_nmbr(band) != None)]
     
-    ms_bands = [band for band in rasters if (band_nmbr(band) >= 4 and band_nmbr(band) <=8)]
-    bqa_band = ms_bands[0]
-    #bqa_band = [band for band in rasters if (band_nmbr(band) == None)][0]
+    #ms_bands = [band for band in rasters if (band_nmbr(band) >= 4 and band_nmbr(band) <=8)]
+    #bqa_band = ms_bands[0]
+    bqa_band = [band for band in rasters if (band_nmbr(band) == None)][0]
     
     try:
-        #checkout_Ext("Spatial")
+        checkout_Ext("Spatial")
         print "\nReprojecting and Cleaning landsat bands."
         ap.AddMessage("\nReprojecting and Cleaning landsat bands.")
         for band in ms_bands:
@@ -165,7 +165,7 @@ def calc_toa(input_dir, output_dir, meta):
 
     try:
 
-        #checkout_Ext("Spatial")
+        checkout_Ext("Spatial")
 
         print "\nCalculating TOA Reflectance for landsat 8 bands"
         ap.AddMessage("\nCalculating TOA Reflectance for landsat 8 bands")
@@ -236,7 +236,7 @@ def calc_ndvi(path, meta):
     nir = ap.sa.Raster(ap.ListRasters('*B5.img')[0])
 
     try:
-        #checkout_Ext("Spatial")
+        checkout_Ext("Spatial")
         
         print "\nCalculating NDVI"
         ap.AddMessage("\nCalculating NDVI")
