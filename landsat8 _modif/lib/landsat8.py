@@ -59,6 +59,7 @@ def process_landsat(path, projection, output=None):
         calc_toa(output, toa, mtl)
         stack_bands(toa, mtl)
         pan_sharpen(toa, mtl)
+        spatial_filter(toa, mtl)
         calc_ndvi(toa, mtl)
 
     finally:
@@ -258,6 +259,28 @@ def calc_ndvi(path, meta):
         checkin_Ext("Spatial")
         
         # arcpy.Delete_management("forGettingLoc")
+
+def spatial_filter(path, meta):
+    ap.env.workspace = path
+    out_stack = str(meta['L1_METADATA_FILE']['LANDSAT_SCENE_ID']) + 'STACK_FILTER.img'
+
+    rasters = ap.ListRasters()
+    inRaster = [img for img in rasters if 'STACK_PANSHARP.img' in img]
+
+    print ""
+    print "Begining Spatial Filtering"
+
+    # Check out the ArcGIS Spatial Analyst extension license
+    arcpy.CheckOutExtension("Spatial")
+
+    # Execute Filter
+    filterOut =  Filter(inRaster, "LOW", "") 
+
+    # Save the output 
+    filterOut.save(path + "/" +out_stack)
+
+    print ""
+    print "Spatial Filtering Complete"
 
 
 ## Funtion not built into function "process_landsat"
