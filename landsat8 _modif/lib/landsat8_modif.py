@@ -274,7 +274,7 @@ def spatial_filter(path, meta):
     ap.CheckOutExtension("Spatial")
 
     # Execute Filter
-    filterOut =  Filter(inRaster, "LOW", "") 
+    filterOut =  ap.sa.Filter(inRaster, "LOW", "") 
 
     # Save the output 
     filterOut.save(path + "/" +out_stack)
