@@ -1,5 +1,5 @@
 import arcpy as ap
-import landsat8 as ls
+import landsat8_modif as ls
 
 ls_dir = ap.GetParameterAsText(0)
 proj = ap.GetParameterAsText(1)

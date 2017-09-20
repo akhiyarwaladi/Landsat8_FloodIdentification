@@ -105,7 +105,7 @@ def reproject(input_dir, output_dir, projection, meta):
     bqa_band = [band for band in rasters if (band_nmbr(band) == None)][0]
     
     try:
-        #checkout_Ext("Spatial")
+        checkout_Ext("Spatial")
         print "\nReprojecting and Cleaning landsat bands."
         ap.AddMessage("\nReprojecting and Cleaning landsat bands.")
         for band in ms_bands:
