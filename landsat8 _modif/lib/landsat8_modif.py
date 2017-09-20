@@ -271,7 +271,7 @@ def spatial_filter(path, meta):
     print "Begining Spatial Filtering"
 
     # Check out the ArcGIS Spatial Analyst extension license
-    arcpy.CheckOutExtension("Spatial")
+    ap.CheckOutExtension("Spatial")
 
     # Execute Filter
     filterOut =  Filter(inRaster, "LOW", "") 
