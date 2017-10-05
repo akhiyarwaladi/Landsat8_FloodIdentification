@@ -304,7 +304,7 @@ def pan_sharpen(path, meta):
     print pan
     print ""
     print "Begining Pan Sharpen"
-    ap.CreatePansharpenedRasterDataset_management(rgb[0], "3", "2", "1", "4", out_stack, pan[0], "Brovey") 
+    ap.CreatePansharpenedRasterDataset_management(rgb[0], "4", "3", "2", "5", out_stack, pan[0], "Brovey") 
 
     print ""
     print "Pan Sharpen Complete"
