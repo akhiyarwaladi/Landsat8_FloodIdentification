@@ -10,6 +10,8 @@ class SpatialRefProjError (Exception):
 import arcpy as ap
 import numpy as np
 import os, sys, time, glob, math, string
+#from arcpy import env
+from arcpy.sa import *
 
 ##  Function to process a landsat scene directory
 ##
@@ -31,8 +33,9 @@ def process_landsat(path, projection, output=None):
     if output is None:
         output = os.path.join(path, "processed")
         if os.path.exists(output):
-            os.system('rmdir /s /q '+ output)
-            os.mkdir(output)
+            # os.system('rmdir /s /q '+ output)
+            # os.mkdir(output)
+            sys.exit(0)
             print "\nDirectory for reprojection already Exisits"
             ap.AddMessage("\nDirectory for reprojection already Exisits")
         else:
@@ -98,14 +101,14 @@ def reproject(input_dir, output_dir, projection, meta):
     ap.env.workspace = input_dir
 
     rasters = ap.ListRasters('*.TIF')
-    ms_bands = [band for band in rasters if (band_nmbr(band) != None)]
+    #ms_bands = [band for band in rasters if (band_nmbr(band) != None)]
     
-    #ms_bands = [band for band in rasters if (band_nmbr(band) >= 4 and band_nmbr(band) <=8)]
+    ms_bands = [band for band in rasters if (band_nmbr(band) >= 2 and band_nmbr(band) <=8)]
     #bqa_band = ms_bands[0]
     bqa_band = [band for band in rasters if (band_nmbr(band) == None)][0]
     
     try:
-        checkout_Ext("Spatial")
+        #checkout_Ext("Spatial")
         print "\nReprojecting and Cleaning landsat bands."
         ap.AddMessage("\nReprojecting and Cleaning landsat bands.")
         for band in ms_bands:
@@ -165,7 +168,7 @@ def calc_toa(input_dir, output_dir, meta):
     ms_bands = [band for band in rasters if (band_nmbr(band) != None)]
 
     try:
-        checkout_Ext("Spatial")
+        #checkout_Ext("Spatial")
 
         print "\nCalculating TOA Reflectance for landsat 8 bands"
         ap.AddMessage("\nCalculating TOA Reflectance for landsat 8 bands")
@@ -236,7 +239,7 @@ def calc_ndvi(path, meta):
     nir = ap.sa.Raster(ap.ListRasters('*B5.img')[0])
 
     try:
-        checkout_Ext("Spatial")
+        #checkout_Ext("Spatial")
         
         print "\nCalculating NDVI"
         ap.AddMessage("\nCalculating NDVI")
@@ -262,7 +265,7 @@ def calc_ndvi(path, meta):
 
 def spatial_filter(path, meta):
     ap.env.workspace = path
-    out_stack = str(meta['L1_METADATA_FILE']['LANDSAT_SCENE_ID']) + 'STACK_FILTER.img'
+    out_filter = str(meta['L1_METADATA_FILE']['LANDSAT_SCENE_ID']) + 'STACK_FILTER.img'
 
     rasters = ap.ListRasters()
     inRaster = [img for img in rasters if 'STACK_PANSHARP.img' in img]
@@ -271,13 +274,17 @@ def spatial_filter(path, meta):
     print "Begining Spatial Filtering"
 
     # Check out the ArcGIS Spatial Analyst extension license
-    ap.CheckOutExtension("Spatial")
+    #ap.CheckOutExtension("Spatial")
 
-    # Execute Filter
-    filterOut =  ap.sa.Filter(inRaster, "LOW", "") 
+    # Set local variables
+    #inRaster = "elevation"
+    #neighborhood = NbrIrregular("D:/DataMining/lapan/dataClone_2/IrregularKernel.txt")
+    #neighborhood = NbrRectangle(3, 3, "CELL")
+    # Execute FocalStatistics
+    outFocalStatistics = ap.sa.FocalStatistics(inRaster, NbrIrregular("D:/DataMining/lapan/dataClone_2/IrregularKernel.txt"), "MEDIAN", "")
 
     # Save the output 
-    filterOut.save(path + "/" +out_stack)
+    outFocalStatistics.save(out_filter)
 
     print ""
     print "Spatial Filtering Complete"
@@ -379,7 +386,7 @@ def parse_mtl(path=None):
 
     
     files = os.listdir(path)
-    mtl = [txt for txt in files if '.txt' in txt][0]
+    mtl = [txt for txt in files if 'MTL.txt' in txt][0]
     lines = iter(open(os.path.join(path, mtl)).readlines())
     hdrdata= {}
 
