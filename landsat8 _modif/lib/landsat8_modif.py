@@ -266,12 +266,14 @@ def calc_ndvi(path, meta):
 def spatial_filter(path, meta):
     ap.env.workspace = path
     out_filter = str(meta['L1_METADATA_FILE']['LANDSAT_SCENE_ID']) + 'STACK_FILTER.img'
+    print out_filter
 
     rasters = ap.ListRasters()
     inRaster = [img for img in rasters if 'STACK_PANSHARP.img' in img]
 
     print ""
     print "Begining Spatial Filtering"
+    ap.AddMessage("Begining Spatial Filtering")
 
     # Check out the ArcGIS Spatial Analyst extension license
     #ap.CheckOutExtension("Spatial")
@@ -281,13 +283,14 @@ def spatial_filter(path, meta):
     #neighborhood = NbrIrregular("D:/DataMining/lapan/dataClone_2/IrregularKernel.txt")
     #neighborhood = NbrRectangle(3, 3, "CELL")
     # Execute FocalStatistics
-    outFocalStatistics = ap.sa.FocalStatistics(inRaster, NbrIrregular("D:/DataMining/lapan/dataClone_2/IrregularKernel.txt"), "MEDIAN", "")
+    outFocalStatistics = ap.sa.FocalStatistics(inRaster[0], ap.sa.NbrIrregular("D:/DataMining/lapan/dataClone_2/IrregularKernel.txt"))
 
     # Save the output 
     outFocalStatistics.save(out_filter)
 
     print ""
     print "Spatial Filtering Complete"
+    ap.AddMessage("Spatial Filtering Complete")
 
 
 ## Funtion not built into function "process_landsat"
