@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Filename: landsat8.py
+# Filename: landsat8_modif.py
 
 class LicenseError(Exception):
     pass
@@ -15,7 +15,7 @@ from arcpy.sa import *
 
 ##  Function to process a landsat scene directory
 ##
-##  @output : Reprojected bands, TOA Reflectance, Calculated NDVI and EVI
+##  @output : Reprojected bands, TOA Reflectance, Calculated NDWI
 def process_landsat(path, projection, output=None):
     '''Calc/converts TOA Reflectance for each band in the directory
 
@@ -35,7 +35,7 @@ def process_landsat(path, projection, output=None):
         if os.path.exists(output):
             # os.system('rmdir /s /q '+ output)
             # os.mkdir(output)
-            sys.exit(0)
+            # sys.exit(0)
             print "\nDirectory for reprojection already Exisits"
             ap.AddMessage("\nDirectory for reprojection already Exisits")
         else:
@@ -44,7 +44,7 @@ def process_landsat(path, projection, output=None):
             ap.AddMessage("\nCreated the output directory: " + output)
     else:
         if os.path.exists(output):
-            sys.exit(0)
+            #sys.exit(0)
             print "\nDirectory for reprojection already Exisits"
             ap.AddMessage("\nDirectory for reprojection already Exisits")
         else:
@@ -63,7 +63,7 @@ def process_landsat(path, projection, output=None):
         stack_bands(toa, mtl)
         pan_sharpen(toa, mtl)
         spatial_filter(toa, mtl)
-        calc_ndvi(toa, mtl)
+        calc_ndwi(toa, mtl)
 
     finally:
         print "\n Completed processing landsat data for scene " + str(mtl['L1_METADATA_FILE']['LANDSAT_SCENE_ID'])
@@ -223,7 +223,7 @@ def stack_bands(path, meta):
     ap.AddMessage("Composite Stack Complete")
 
 
-def calc_ndvi(path, meta):
+def calc_ndwi(path, meta):
     '''Use the pan chromatic layer to pan-sharen the Blue, Green, Red, & NIR stack
 
         @param   path:  Directory containing @param stack
@@ -241,16 +241,16 @@ def calc_ndvi(path, meta):
     try:
         #checkout_Ext("Spatial")
         
-        print "\nCalculating NDVI"
-        ap.AddMessage("\nCalculating NDVI")
-        ndvi = (green-nir)/(green+nir)
+        print "\nCalculating NDWI"
+        ap.AddMessage("\nCalculating NDWI")
+        ndwi = (green-nir)/(green+nir)
 
-        print "\nSaving NDVI As: " + str(output)
-        ap.AddMessage("\nSaving NDVI As: " + str(output))
-        ndvi.save(output)
+        print "\nSaving NDWI As: " + str(output)
+        ap.AddMessage("\nSaving NDWI As: " + str(output))
+        ndwi.save(output)
 
-        print "\nFinished NDVI"
-        ap.AddMessage("\nFinished NDVI")
+        print "\nFinished NDWI"
+        ap.AddMessage("\nFinished NDWI")
 
     except SpatialRefProjError:
         ap.AddError ("Spatial Data must use a projected coordinate system to run")
@@ -283,7 +283,7 @@ def spatial_filter(path, meta):
     #neighborhood = NbrIrregular("D:/DataMining/lapan/dataClone_2/IrregularKernel.txt")
     #neighborhood = NbrRectangle(3, 3, "CELL")
     # Execute FocalStatistics
-    outFocalStatistics = ap.sa.FocalStatistics(inRaster[0], ap.sa.NbrIrregular("D:/DataMining/lapan/dataClone_2/IrregularKernel.txt"))
+    outFocalStatistics = ap.sa.FocalStatistics(inRaster[0], ap.sa.NbrIrregular("D:/DataMining/lapan/dataClone_2/high-pass.txt"))
 
     # Save the output 
     outFocalStatistics.save(out_filter)
@@ -292,7 +292,35 @@ def spatial_filter(path, meta):
     print "Spatial Filtering Complete"
     ap.AddMessage("Spatial Filtering Complete")
 
+def final_spatial_filter(path, meta):
+    ap.env.workspace = path
+    out_filter = str(meta['L1_METADATA_FILE']['LANDSAT_SCENE_ID']) + 'FINAL_FILTER.img'
+    print out_filter
 
+    rasters = ap.ListRasters()
+    inRaster = [img for img in rasters if 'STACK_FILTER.img' in img]
+
+    print ""
+    print "Begining Spatial Filtering"
+    ap.AddMessage("Begining Spatial Filtering")
+
+    # Check out the ArcGIS Spatial Analyst extension license
+    #ap.CheckOutExtension("Spatial")
+
+    # Set local variables
+    #inRaster = "elevation"
+    #neighborhood = NbrIrregular("D:/DataMining/lapan/dataClone_2/IrregularKernel.txt")
+    #neighborhood = NbrRectangle(3, 3, "CELL")
+    # Execute FocalStatistics
+    outFocalStatistics = ap.sa.FocalStatistics(inRaster[0], ap.sa.NbrIrregular("D:/DataMining/lapan/dataClone_2/majority.txt"))
+
+    # Save the output 
+    outFocalStatistics.save(out_filter)
+
+    print ""
+    print "Spatial Filtering Complete"
+    ap.AddMessage("Spatial Filtering Complete")
+    
 ## Funtion not built into function "process_landsat"
 def pan_sharpen(path, meta):
     '''Use the pan chromatic layer to pan-sharen the Blue, Green, Red, & NIR stack
