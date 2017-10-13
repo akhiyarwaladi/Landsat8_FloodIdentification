@@ -320,7 +320,7 @@ def final_spatial_filter(path, meta):
     print ""
     print "Spatial Filtering Complete"
     ap.AddMessage("Spatial Filtering Complete")
-    
+
 ## Funtion not built into function "process_landsat"
 def pan_sharpen(path, meta):
     '''Use the pan chromatic layer to pan-sharen the Blue, Green, Red, & NIR stack
@@ -346,6 +346,16 @@ def pan_sharpen(path, meta):
 
     print ""
     print "Pan Sharpen Complete"
+
+def rasterToVector(path, meta):
+    ap.env.workspace = path
+    out_vector = path + str(meta['L1_METADATA_FILE']['LANDSAT_SCENE_ID']) + 'FINAL_VECTOR.shp'
+
+    rasters = ap.ListRasters()
+    inRaster = [img for img in rasters if 'FINAL_FILTER.img' in img]
+    field = "VALUE"
+
+    ap.RasterToPolygon_conversion(inRaster[0], out_vector, "NO_SIMPLIFY", field)
 
 
 ##
