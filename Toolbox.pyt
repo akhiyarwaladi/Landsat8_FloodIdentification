@@ -1,12 +1,11 @@
 import arcpy
-import data_process as dp
-import os
+
 
 class Toolbox(object):
     def __init__(self):
         """Define the toolbox (the name of the toolbox is the name of the
         .pyt file)."""
-        self.label = "Flood Detection Toolbox"
+        self.label = "Toolbox"
         self.alias = ""
 
         # List of tool classes associated with this toolbox
@@ -37,20 +36,13 @@ class Tool(object):
                 direction = "Input"
             )
         projection = arcpy.Parameter(
-                displayName= "Projeksi data (ke utm sesuai zona)",
+                displayName= "Projeksi data (ke utm sesuai zona",
                 name = "projection",
                 datatype = "GPSpatialReference",
                 parameterType = "Required",
                 direction = "Input"
             )
-        out_process = arcpy.Parameter(
-                displayName = "Folder keluaran hasil praproses",
-                name = "out_process",
-                datatype = "DEFolder",
-                parameterType = "Required",
-                direction = "Output"
-            )
-        params = [pre_flood, post_flood, projection, out_process]
+        params = [pre_flood, post_flood, projection]
         return params
 
     def isLicensed(self):
@@ -70,17 +62,4 @@ class Tool(object):
 
     def execute(self, parameters, messages):
         """The source code of the tool."""
-        pre_flood = parameters[0].valueAsText
-        post_flood = parameters[1].valueAsText
-        projection = parameters[2].valueAsText
-        out_process = parameters[3].valueAsText
-
-        messages .addMessage(
-                '\n'+pre_flood+'\n'+post_flood+'\n'+projection+'\n'
-            )
-        
-        os.mkdir(out_process)
-        dp.process_landsat(pre_flood, projection, out_process, "satu")
-        dp.process_landsat(post_flood, projection, out_process, "dua")
-        dp.diffNDWI(out_process)
         return

@@ -12,11 +12,11 @@ import numpy as np
 import os, sys, time, glob, math, string
 #from arcpy import env
 from arcpy.sa import *
-
+#WGS_1984_UTM_Zone_49N
 ##  Function to process a landsat scene directory
 ##
 ##  @output : Reprojected bands, TOA Reflectance, Calculated NDWI
-def process_landsat(path, projection, output=None):
+def process_landsat(path, projection, out, flag, output=None):
     '''Calc/converts TOA Reflectance for each band in the directory
 
         @type path:     c{str}
@@ -29,9 +29,9 @@ def process_landsat(path, projection, output=None):
     print "Workspace Environment set to " + str(path)
     ap.AddMessage("Workspace Environment set to " + str(path))
 
-    
     if output is None:
-        output = os.path.join(path, "processed")
+        output = os.path.join(out, "processed"+flag)
+
         if os.path.exists(output):
             # os.system('rmdir /s /q '+ output)
             # os.mkdir(output)
@@ -79,23 +79,23 @@ def reproject(input_dir, output_dir, projection, meta):
         @return  output_dir: output directory path
     '''
 
-##    ##  Setting output directory id not defined
-##
-##    if output_dir is None:
-##        output_dir = os.path.join(input_dir, "processed")
-##        if os.path.exists(output_dir):
-##            sys.exit(0)
-##            print "\nDirectory for reprojection already Exisits"
-##        else:
-##            os.mkdir(output_dir)
-##            print "\nCreated the output directory: " + output_dir
-##    else:
-##        if os.path.exists(output_dir):
-##            sys.exit(0)
-##            print "\nDirectory for reprojection already Exisits"
-##        else:
-##            os.mkdir(output_dir)
-##            print "\nCreated the output directory: " + output_dir
+   ##  Setting output directory id not defined
+
+    # if output_dir is None:
+    #     output_dir = os.path.join(input_dir, "processed")
+    #     if os.path.exists(output_dir):
+    #         sys.exit(0)
+    #         print "\nDirectory for reprojection already Exisits"
+    #     else:
+    #         os.mkdir(output_dir)
+    #         print "\nCreated the output directory: " + output_dir
+    # else:
+    #     if os.path.exists(output_dir):
+    #         sys.exit(0)
+    #         print "\nDirectory for reprojection already Exisits"
+    #     else:
+    #         os.mkdir(output_dir)
+    #         print "\nCreated the output directory: " + output_dir
 
     
     ap.env.workspace = input_dir
@@ -262,6 +262,13 @@ def calc_ndwi(path, meta):
         checkin_Ext("Spatial")
         
         # arcpy.Delete_management("forGettingLoc")
+
+def diffNDWI(path):
+    ndwiPre = ap.sa.Raster(path+"/processedsatu/toa/LC81210602015188RPI00_NDVI.img")
+    ndwiPost = ap.sa.Raster(path+"/processeddua/toa/LC81210602015188RPI00_NDVI.img")
+
+    ndwiDiff = ndwiPost - ndwiPre
+    ndwiDiff.save(path)
 
 def spatial_filter(path, meta):
     ap.env.workspace = path
