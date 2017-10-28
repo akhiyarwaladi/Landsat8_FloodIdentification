@@ -264,11 +264,23 @@ def calc_ndwi(path, meta):
         # arcpy.Delete_management("forGettingLoc")
 
 def diffNDWI(path):
-    ndwiPre = ap.sa.Raster(path+"/processedsatu/toa/LC81210602015188RPI00_NDVI.img")
-    ndwiPost = ap.sa.Raster(path+"/processeddua/toa/LC81210602015188RPI00_NDVI.img")
+    #path = "D:/DataMining/lapan/Deteksi Banjir/LC81200602016168RPI00_Tool1"
+    ap.env.workspace = path
+    output = 'DIFF_NDVI.img'
+    ndwiPre = ap.sa.Raster(path+"/processedsatu/toa/LC81200602016168RPI00_NDVI.img")
+    ndwiPost = ap.sa.Raster(path+"/processeddua/toa/LC81200602016216RPI00_NDVI.img")
 
     ndwiDiff = ndwiPost - ndwiPre
-    ndwiDiff.save(path)
+    ndwiDiff.save(output)
+
+def pixelExtraction(path):
+    a = 0.6
+    b = 0.4
+    ndwiDiff = ap.sa.Raster(path+"/DIFF_NDVI.img")
+    ndwiPost = ap.sa.Raster(path+"/processeddua/toa/LC81200602016216RPI00_NDVI.img")
+    # if(ndwiPost <= a and ndwiDiff >= b)
+    #     banjir = 1
+    
 
 def spatial_filter(path, meta):
     ap.env.workspace = path
