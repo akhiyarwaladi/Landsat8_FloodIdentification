@@ -16,7 +16,7 @@ class Toolbox(object):
 class Tool(object):
     def __init__(self):
         """Define the tool (tool name is the name of the class)."""
-        self.label = "Tool"
+        self.label = "Flood Detection Toolbox"
         self.description = ""
         self.canRunInBackground = False
 
@@ -84,4 +84,5 @@ class Tool(object):
         dp.process_landsat(post_flood, projection, out_process, "_PostFlood")
         dp.diffNDWI(out_process, os.path.basename(pre_flood), os.path.basename(post_flood))
         dp.pixelExtraction(out_process, os.path.basename(pre_flood), os.path.basename(post_flood))
+        
         return

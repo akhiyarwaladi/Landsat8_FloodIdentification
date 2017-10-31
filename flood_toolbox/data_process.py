@@ -282,7 +282,7 @@ def pixelExtraction(path, pre_flood, post_flood):
     ndwiPost = ap.sa.Raster(path+"/processed_PostFlood/toa/"+post_flood+"_NDVI.img")
 
     outraster = Con((ndwiDiff >= 0.6) & (ndwiDiff !=0.00), ndwiDiff)
-    # outraster = Con()
+    # outraster = Con((ndwiPost <= a) & (ndwiDiff >= b))
     outraster.save(output)
     # if(ndwiPost <= a and ndwiDiff >= b)
     #     banjir = 1
