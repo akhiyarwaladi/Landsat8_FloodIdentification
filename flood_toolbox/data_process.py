@@ -263,21 +263,27 @@ def calc_ndwi(path, meta):
         
         # arcpy.Delete_management("forGettingLoc")
 
-def diffNDWI(path):
+def diffNDWI(path, pre_flood, post_flood):
     #path = "D:/DataMining/lapan/Deteksi Banjir/LC81200602016168RPI00_Tool1"
     ap.env.workspace = path
     output = 'DIFF_NDVI.img'
-    ndwiPre = ap.sa.Raster(path+"/processedsatu/toa/LC81200602016168RPI00_NDVI.img")
-    ndwiPost = ap.sa.Raster(path+"/processeddua/toa/LC81200602016216RPI00_NDVI.img")
+    ndwiPre = ap.sa.Raster(path+"/processed_PreFlood/toa/"+pre_flood+"_NDVI.img")
+    ndwiPost = ap.sa.Raster(path+"/processed_PostFlood/toa/"+post_flood+"_NDVI.img")
 
     ndwiDiff = ndwiPost - ndwiPre
     ndwiDiff.save(output)
 
-def pixelExtraction(path):
+def pixelExtraction(path, pre_flood, post_flood):
+    ap.env.workspace = path
+    output = 'EXTRACT_CON.img'
     a = 0.6
     b = 0.4
     ndwiDiff = ap.sa.Raster(path+"/DIFF_NDVI.img")
-    ndwiPost = ap.sa.Raster(path+"/processeddua/toa/LC81200602016216RPI00_NDVI.img")
+    ndwiPost = ap.sa.Raster(path+"/processed_PostFlood/toa/"+post_flood+"_NDVI.img")
+
+    outraster = Con((ndwiDiff >= 0.6) & (ndwiDiff !=0.00), ndwiDiff)
+    # outraster = Con()
+    outraster.save(output)
     # if(ndwiPost <= a and ndwiDiff >= b)
     #     banjir = 1
     

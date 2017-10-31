@@ -75,12 +75,13 @@ class Tool(object):
         projection = parameters[2].valueAsText
         out_process = parameters[3].valueAsText
 
-        messages .addMessage(
-                '\n'+pre_flood+'\n'+post_flood+'\n'+projection+'\n'
-            )
+        messages.addMessage(
+            '\n'+pre_flood+'\n'+post_flood+'\n'+projection+'\n'
+        )
         
         os.mkdir(out_process)
-        dp.process_landsat(pre_flood, projection, out_process, "satu")
-        dp.process_landsat(post_flood, projection, out_process, "dua")
-        dp.diffNDWI(out_process)
+        dp.process_landsat(pre_flood, projection, out_process, "_PreFlood")
+        dp.process_landsat(post_flood, projection, out_process, "_PostFlood")
+        dp.diffNDWI(out_process, os.path.basename(pre_flood), os.path.basename(post_flood))
+        dp.pixelExtraction(out_process, os.path.basename(pre_flood), os.path.basename(post_flood))
         return
