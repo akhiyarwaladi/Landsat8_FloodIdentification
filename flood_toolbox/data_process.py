@@ -212,7 +212,7 @@ def stack_bands(path, meta):
 
     ap.env.workspace = path
     rasters = ap.ListRasters()
-    rgb_rasters = [rgb for rgb in rasters if band_nmbr(rgb) >= 4 and band_nmbr(rgb) <= 6]
+    rgb_rasters = [rgb for rgb in rasters if band_nmbr(rgb) >= 2 and band_nmbr(rgb) <= 5]
     out_stack = str(meta['L1_METADATA_FILE']['LANDSAT_SCENE_ID']) + 'STACK_RGB.img'
     print "\nRGB Bands:"
     print " " + str(rgb_rasters)
@@ -234,8 +234,10 @@ def calc_ndwi(path, meta):
     '''
 
     ap.env.workspace = path
-    output = str(meta['L1_METADATA_FILE']['LANDSAT_SCENE_ID']) + '_NDVI.img'
+    output = str(meta['L1_METADATA_FILE']['LANDSAT_SCENE_ID']) + '_NDWI.img'
+    output2 = str(meta['L1_METADATA_FILE']['LANDSAT_SCENE_ID']) + '_NDVI.img'
     green = ap.sa.Raster(ap.ListRasters('*B3.img')[0])
+    red = ap.sa.Raster(ap.ListRasters('*B4.img')[0])
     nir = ap.sa.Raster(ap.ListRasters('*B5.img')[0])
 
     try:
@@ -244,10 +246,12 @@ def calc_ndwi(path, meta):
         print "\nCalculating NDWI"
         ap.AddMessage("\nCalculating NDWI")
         ndwi = (green-nir)/(green+nir)
+        ndvi = (nir-red)/(nir+red)
 
         print "\nSaving NDWI As: " + str(output)
         ap.AddMessage("\nSaving NDWI As: " + str(output))
         ndwi.save(output)
+        ndvi.save(output2)
 
         print "\nFinished NDWI"
         ap.AddMessage("\nFinished NDWI")
@@ -266,24 +270,59 @@ def calc_ndwi(path, meta):
 def diffNDWI(path, pre_flood, post_flood):
     #path = "D:/DataMining/lapan/Deteksi Banjir/LC81200602016168RPI00_Tool1"
     ap.env.workspace = path
-    output = 'DIFF_NDVI.img'
-    ndwiPre = ap.sa.Raster(path+"/processed_PreFlood/toa/"+pre_flood+"_NDVI.img")
-    ndwiPost = ap.sa.Raster(path+"/processed_PostFlood/toa/"+post_flood+"_NDVI.img")
+    output = 'DIFF_NDWI.img'
+    output2 = 'DIFF_NDVI.img'
+    ndwiPre = ap.sa.Raster(path+"/processed_PreFlood/toa/"+pre_flood+"_NDWI.img")
+    ndwiPost = ap.sa.Raster(path+"/processed_PostFlood/toa/"+post_flood+"_NDWI.img")
 
-    ndwiDiff = ndwiPost - ndwiPre
+    ndviPre = ap.sa.Raster(path+"/processed_PreFlood/toa/"+pre_flood+"_NDVI.img")
+    ndviPost = ap.sa.Raster(path+"/processed_PostFlood/toa/"+post_flood+"_NDVI.img")
+    ndviDiff = ndviPost - ndviPre
+
     ndwiDiff.save(output)
+    ndviDiff.save(output2)
 
 def pixelExtraction(path, pre_flood, post_flood):
     ap.env.workspace = path
-    output = 'EXTRACT_CON.img'
+    output = 'PERMANENT_WATER.img'
+    output2 = 'FLOOD_WATER.img'
+    output3 = 'PREVIOUSLY_INUNDATED.img'
+    output4 = 'NON_FLOOD_AREA.img'
+
     a = 0.6
     b = 0.4
-    ndwiDiff = ap.sa.Raster(path+"/DIFF_NDVI.img")
-    ndwiPost = ap.sa.Raster(path+"/processed_PostFlood/toa/"+post_flood+"_NDVI.img")
 
-    outraster = Con((ndwiDiff >= 0.6) & (ndwiDiff !=0.00), ndwiDiff)
-    # outraster = Con((ndwiPost <= a) & (ndwiDiff >= b))
-    outraster.save(output)
+    redPre = ap.sa.Raster(path+"/processed_PreFlood/toa/"+pre_flood+"TOA_B4.img")
+    nirPost = ap.sa.Raster(path+"/processed_PostFlood/toa/"+post_flood+"TOA_B5.img")
+    swirPost = ap.sa.Raster(path+"/processed_PostFlood/toa/"+post_flood+"TOA_B6.img")
+
+    ndwiDiff = ap.sa.Raster(path+"/DIFF_NDWI.img")
+    ndwiPost = ap.sa.Raster(path+"/processed_PostFlood/toa/"+post_flood+"_NDWI.img")
+    ndwiPre = ap.sa.Raster(path+"/processed_PreFlood/toa/"+pre_flood+"_NDWI.img")
+
+    ndviDiff = ap.sa.Raster(path+"/DIFF_NDVI.img")
+    ndviPost = ap.sa.Raster(path+"/processed_PostFlood/toa/"+post_flood+"_NDVI.img")
+    ndviPre = ap.sa.Raster(path+"/processed_PreFlood/toa/"+pre_flood+"_NDVI.img")
+
+    # outraster = Con((ndwiDiff >= 0.6) & (ndwiDiff !=0.00), ndwiDiff)
+    if( (ndwiPre >= -0.05) & (redPre <= 0.35) ):
+
+        outraster = Con((ndwiPre >= -0.05) & (redPre <= 0.35), ndwiPost)
+        outraster.save(output)
+    else:
+        if ( (ndwiPost >= 0.1) & (ndviPost <= 0.1) ):
+            outraster = Con((ndwiPost >= 0.1) & (ndviPost <= 0.1), ndwiPost)
+            outraster.save(output2)
+        else:
+            if( (ndwiDiff >= 0) & (nirPost <= 0.10) ):
+                if ( ndviDiff < 0 ):
+                    outraster = Con()
+                    outraster.save(output3)
+                else:
+                    outraster.save(output4)
+            else:
+                outraster.save(output4)
+
     # if(ndwiPost <= a and ndwiDiff >= b)
     #     banjir = 1
     
