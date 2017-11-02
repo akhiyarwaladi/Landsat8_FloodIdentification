@@ -305,26 +305,45 @@ def pixelExtraction(path, pre_flood, post_flood):
     ndviPre = ap.sa.Raster(path+"/processed_PreFlood/toa/"+pre_flood+"_NDVI.img")
 
     # outraster = Con((ndwiDiff >= 0.6) & (ndwiDiff !=0.00), ndwiDiff)
-    if( (ndwiPre >= -0.05) & (redPre <= 0.35) ):
+    # if( (ndwiPre >= -0.05) & (redPre <= 0.35) ):
 
-        outraster = Con((ndwiPre >= -0.05) & (redPre <= 0.35), ndwiPost)
-        outraster.save(output)
-    else:
-        if ( (ndwiPost >= 0.1) & (ndviPost <= 0.1) ):
-            outraster = Con((ndwiPost >= 0.1) & (ndviPost <= 0.1), ndwiPost)
-            outraster.save(output2)
-        else:
-            if( (ndwiDiff >= 0) & (nirPost <= 0.10) ):
-                if ( ndviDiff < 0 ):
-                    outraster = Con()
-                    outraster.save(output3)
-                else:
-                    outraster.save(output4)
-            else:
-                outraster.save(output4)
+    #     outraster = Con((ndwiPre >= -0.05) & (redPre <= 0.35), ndwiPost)
+    #     outraster.save(output)
+    # else:
+    #     if ( (ndwiPost >= 0.1) & (ndviPost <= 0.1) ):
+    #         outraster = Con((ndwiPost >= 0.1) & (ndviPost <= 0.1), ndwiPost)
+    #         outraster.save(output2)
+    #     else:
+    #         if( (ndwiDiff >= 0) & (nirPost <= 0.10) ):
+    #             if ( ndviDiff < 0 ):
+    #                 outraster = Con()
+    #                 outraster.save(output3)
+    #             else:
+    #                 outraster.save(output4)
+    #         else:
+    #             outraster.save(output4)
 
-    # if(ndwiPost <= a and ndwiDiff >= b)
-    #     banjir = 1
+    ###### PERMANENT WATER ###########
+    mask1_step1 = ndwiPre >= -0.05
+    mask1_step2 = redPre <= 0.35
+    mask1_prefinal = Int(mask1_step1) + Int(mask1_step2)
+    mask1_final = mask1_prefinal == 2
+    mask1_final.save(output)
+
+    ###### FLOOD WATER #######
+    mask2_step1 = ndwiPost >= 0.1
+    mask2_step2 = ndviPost <= 0.1
+    mask2_prefinal = Int(mask2_step1) + Int(mask2_step2) - mask1_prefinal
+    mask2_final = mask2_prefinal == 3
+    mask2_final.save(output2)
+
+    ###### NON FLOOD AREA ######
+    mask3_step1 = ndwiDiff >= 0
+    mask3_step2 = nirPost <= 0.10
+    mask3_prefinal = Int(mask3_step1) + Int(mask3_step2) - mask2_prefinal
+    mask3_final = mask3_prefinal == 3
+    mask3_final.save(output4)
+
     
 
 def spatial_filter(path, meta):
