@@ -214,11 +214,12 @@ def stack_bands(path, meta):
     rasters = ap.ListRasters()
     rgb_rasters = [rgb for rgb in rasters if band_nmbr(rgb) >= 2 and band_nmbr(rgb) <= 5]
     out_stack = str(meta['L1_METADATA_FILE']['LANDSAT_SCENE_ID']) + 'STACK_RGB.img'
-    print "\nRGB Bands:"
-    print " " + str(rgb_rasters)
+
     ap.AddMessage("Stacking R, G, B, and NIR bands")
 
     ap.CompositeBands_management(rgb_rasters, out_stack)    
+    # print "\nRGB Bands:"
+    # print " " + str(rgb_rasters)
     print "\nComposite Stack Complete!"
     ap.AddMessage("Composite Stack Complete")
 
@@ -251,8 +252,8 @@ def calc_ndwi(path, meta):
         ndwi = (green-swir) / (green+swir)
         ndvi = (nir-red) / (nir+red)
 
-        print "\nSaving NDWI As: " + str(output)
-        ap.AddMessage("\nSaving NDWI As: " + str(output))
+        print "\nSaving NDWI As: " + str(output_ndwi)
+        ap.AddMessage("\nSaving NDWI As: " + str(output_ndvi))
         ndwi.save(output_ndwi)
         ndvi.save(output_ndvi)
 
@@ -273,8 +274,9 @@ def calc_ndwi(path, meta):
 def diffNDWI(path, pre_flood, post_flood):
     #path = "D:/DataMining/lapan/Deteksi Banjir/LC81200602016168RPI00_Tool1"
     ap.env.workspace = path
-    output_ndwi = 'DIFF_NDWI.img'
-    output_ndvi = 'DIFF_NDVI.img'
+    output_ndwi_diff = 'DIFF_NDWI.img'
+    output_ndvi_diff = 'DIFF_NDVI.img'
+    
     ndwiPre = ap.sa.Raster(path+"/processed_PreFlood/toa/"+pre_flood+"_NDWI.img")
     ndwiPost = ap.sa.Raster(path+"/processed_PostFlood/toa/"+post_flood+"_NDWI.img")
 
@@ -286,8 +288,8 @@ def diffNDWI(path, pre_flood, post_flood):
     ndwiDiff = ndwiPost = ndwiPre
     ndviDiff = ndviPost - ndviPre
 
-    ndwiDiff.save(output_ndwi)
-    ndviDiff.save(output_ndvi)
+    ndwiDiff.save(output_ndwi_diff)
+    ndviDiff.save(output_ndvi_diff)
 
     ap.AddMessage("\nFinished saved NDWI and NDVI different")
 
@@ -362,9 +364,6 @@ def spatial_filter(path, meta):
     out_filter = str(meta['L1_METADATA_FILE']['LANDSAT_SCENE_ID']) + 'STACK_FILTER.img'
     print out_filter
 
-    rasters = ap.ListRasters()
-    inRaster = [img for img in rasters if 'STACK_PANSHARP.img' in img]
-
     print ""
     print "Begining Spatial Filtering"
     ap.AddMessage("Begining Spatial Filtering")
@@ -376,8 +375,13 @@ def spatial_filter(path, meta):
     #inRaster = "elevation"
     #neighborhood = NbrIrregular("D:/DataMining/lapan/dataClone_2/IrregularKernel.txt")
     #neighborhood = NbrRectangle(3, 3, "CELL")
+
+    rasters = ap.ListRasters()
+    inRaster = [img for img in rasters if 'STACK_PANSHARP.img' in img]
+
     # Execute FocalStatistics
-    outFocalStatistics = ap.sa.FocalStatistics(inRaster[0], ap.sa.NbrIrregular("D:/DataMining/lapan/dataClone_2/high-pass.txt"))
+    outFocalStatistics = ap.sa.FocalStatistics(inRaster[0], ap.sa.NbrIrregular(
+        "D:/DataMining/lapan/dataClone_2/high-pass.txt"))
 
     # Save the output 
     outFocalStatistics.save(out_filter)

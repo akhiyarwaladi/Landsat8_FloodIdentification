@@ -75,11 +75,11 @@ class Tool(object):
         pre_flood = parameters[0].valueAsText
         post_flood = parameters[1].valueAsText
         projection = utm_zone12
-        out_process = parameters[3].valueAsText
+        out_process = parameters[2].valueAsText
 
-        messages.addMessage(
-            '\n'+pre_flood+'\n'+post_flood+'\n'+projection+'\n'
-        )
+        # messages.addMessage(
+        #     '\n'+pre_flood+'\n'+post_flood+'\n'+projection+'\n'
+        # )
         
         os.mkdir(out_process)
         dp.process_landsat(pre_flood, projection, out_process, "_PreFlood")
