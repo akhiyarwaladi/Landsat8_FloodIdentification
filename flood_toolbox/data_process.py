@@ -58,8 +58,8 @@ def process_landsat(path, projection, out, flag, output=None):
         ## Create directory in Processed out put for the TOA Reflectance
         toa = os.path.join(output, 'toa')
         
-        #reproject(path, output, projection, mtl)
-        calc_toa(path, toa, mtl)
+        reproject(path, output, projection, mtl)
+        calc_toa(output, toa, mtl)
         stack_bands(toa, mtl)
         pan_sharpen(toa, mtl)
         spatial_filter(toa, mtl)
@@ -238,10 +238,10 @@ def calc_ndwi(path, meta):
     output_ndwi = str(meta['L1_METADATA_FILE']['LANDSAT_SCENE_ID']) + '_NDWI.img'
     output_ndvi = str(meta['L1_METADATA_FILE']['LANDSAT_SCENE_ID']) + '_NDVI.img'
 
-    green = ap.sa.Raster(ap.ListRasters('*B3.img')[0])
-    red = ap.sa.Raster(ap.ListRasters('*B4.img')[0])
-    nir = ap.sa.Raster(ap.ListRasters('*B5.img')[0])
-    swir = ap.sa.Raster(ap.ListRasters('*B6.img')[0])
+    green = Float(ap.sa.Raster(ap.ListRasters('*B3.img')[0]))
+    red = Float(ap.sa.Raster(ap.ListRasters('*B4.img')[0]))
+    nir = Float(ap.sa.Raster(ap.ListRasters('*B5.img')[0]))
+    swir = Float(ap.sa.Raster(ap.ListRasters('*B6.img')[0]))
 
     try:
         #checkout_Ext("Spatial")
@@ -249,7 +249,7 @@ def calc_ndwi(path, meta):
         print "\nCalculating NDWI"
         ap.AddMessage("\nCalculating NDWI")
         #ndwi = (green-nir)/(green+nir)
-        ndwi = (green-swir) / (green+swir)
+        ndwi = (green-nir) / (green+nir)
         ndvi = (nir-red) / (nir+red)
 
         print "\nSaving NDWI As: " + str(output_ndwi)
@@ -276,21 +276,23 @@ def diffNDWI(path, pre_flood, post_flood):
     ap.env.workspace = path
     output_ndwi_diff = 'DIFF_NDWI.img'
     output_ndvi_diff = 'DIFF_NDVI.img'
-    
+
+
     ndwiPre = ap.sa.Raster(path+"/processed_PreFlood/toa/"+pre_flood+"_NDWI.img")
     ndwiPost = ap.sa.Raster(path+"/processed_PostFlood/toa/"+post_flood+"_NDWI.img")
+
+    ap.AddMessage("\nCalculating different NDWI and NDVI") 
+
+    ndwiDiff = ndwiPost - ndwiPre
+    ndwiDiff.save(output_ndwi_diff)
 
     ndviPre = ap.sa.Raster(path+"/processed_PreFlood/toa/"+pre_flood+"_NDVI.img")
     ndviPost = ap.sa.Raster(path+"/processed_PostFlood/toa/"+post_flood+"_NDVI.img")
 
-    ap.AddMessage("\nCalculating different NDWI and NDVI")
-
-    ndwiDiff = ndwiPost = ndwiPre
     ndviDiff = ndviPost - ndviPre
-
-    ndwiDiff.save(output_ndwi_diff)
     ndviDiff.save(output_ndvi_diff)
 
+    
     ap.AddMessage("\nFinished saved NDWI and NDVI different")
 
 def pixelExtraction(path, pre_flood, post_flood):
@@ -299,6 +301,10 @@ def pixelExtraction(path, pre_flood, post_flood):
     output_floodWater = 'FLOOD_WATER.img'
     output_preInudate = 'PREVIOUSLY_INUNDATED.img'
     output_nonFlood = 'NON_FLOOD_AREA.img'
+
+    outFlood1 = 'Output_flood1.img'
+    outFlood2 = 'Output_flood2.img'
+    outFinal = 'out_final.img'
 
     redPre = ap.sa.Raster(path+"/processed_PreFlood/toa/"+pre_flood+"TOA_B4.img")
     nirPost = ap.sa.Raster(path+"/processed_PostFlood/toa/"+post_flood+"TOA_B5.img")
@@ -335,27 +341,33 @@ def pixelExtraction(path, pre_flood, post_flood):
 
     ap.AddMessage("\nBegin condition data class")
 
-    ###### PERMANENT WATER ###########
-    mask1_step1 = ndwiPre >= -0.05
-    mask1_step2 = redPre <= 0.35
-    mask1_prefinal = Int(mask1_step1) + Int(mask1_step2)
-    mask1_final = mask1_prefinal == 2
-    mask1_final.save(output_permWater)
+    # ###### PERMANENT WATER ###########
+    # mask1_step1 = ndwiPre >= -0.05
+    # mask1_step2 = redPre <= 0.35
+    # mask1_prefinal = Int(mask1_step1) + Int(mask1_step2)
+    # mask1_final = mask1_prefinal == 2
+    # mask1_final.save(output_permWater)
 
-    ###### FLOOD WATER #######
-    mask2_step1 = ndwiPost >= 0.1
-    mask2_step2 = ndviPost <= 0.1
-    mask2_prefinal = (Int(mask2_step1) + Int(mask2_step2)) - mask1_prefinal
-    mask2_final = mask2_prefinal == 3
-    mask2_final.save(output_floodWater)
+    # ###### FLOOD WATER #######
+    # mask2_step1 = ndwiPost >= 0.1
+    # mask2_step2 = ndviPost <= 0.1
+    # mask2_prefinal = (Int(mask2_step1) + Int(mask2_step2)) - mask1_prefinal
+    # mask2_final = mask2_prefinal == 3
+    # mask2_final.save(output_floodWater)
 
-    ###### NON FLOOD AREA ######
-    mask3_step1 = ndwiDiff >= 0
-    mask3_step2 = nirPost <= 0.10
-    mask3_prefinal = (Int(mask3_step1) + Int(mask3_step2)) - mask2_prefinal
-    mask3_final = mask3_prefinal == 3
-    mask3_final.save(output_nonFlood)
+    # ###### NON FLOOD AREA ######
+    # mask3_step1 = ndwiDiff >= 0
+    # mask3_step2 = nirPost <= 0.10
+    # mask3_prefinal = (Int(mask3_step1) + Int(mask3_step2)) - mask2_prefinal
+    # mask3_final = mask3_prefinal == 3
+    # mask3_final.save(output_nonFlood)
 
+    out1 = Con (((ndwiDiff >= 0.094) & (ndwiPost >= 0.161)), 1, 0)
+    out2 = Con (((ndwiDiff >= 0.228) & (ndwiPost >= 0.548)), 1, 0)
+
+    out1.save(outFlood1)
+    out2.save(outFlood2)
+    out2.save(outFinal)
 
     ap.AddMessage("\nFinished grouping data area")
     
@@ -444,6 +456,34 @@ def pan_sharpen(path, meta):
 
     print ""
     print "Pan Sharpen Complete"
+
+
+def createRandomPoint(path):
+    outFolder = path
+    numPoints = 40
+    outName = "random_point.shp"
+    conFC = path+"/out_final.img"
+
+    ap.AddMessage("Creating Random Point")
+    ap.CreateRandomPoints_management(outFolder, outName, "", conFC, numPoints) 
+    ap.AddMessage("Finished creat random point")
+
+
+def valuesToPoint(path):
+
+    # Set environment settings
+    ap.env.workspace = path
+
+    # Set local variables
+    inPointFeatures = path+"/random_point.shp"
+    inRaster = ap.sa.Raster(path+"/out_final.img")
+    outPointFeatures = "random_point_values.shp"
+
+    ap.AddMessage("Extract raster value to poin")
+    # Execute ExtractValuesToPoints
+    ExtractValuesToPoints(inPointFeatures, inRaster, outPointFeatures, "INTERPOLATE", "VALUE_ONLY")
+
+    ap.AddMessage("Finished Extract value to point")
 
 def rasterToVector(path, meta):
     ap.env.workspace = path

@@ -23,44 +23,34 @@ class Tool(object):
 
     def getParameterInfo(self):
         """Define parameter definitions"""
-
-        landsat_number = arcpy.Parameter(
-                displayName= "Data Landsat ke-",
-                name = "landsat_7",
-                datatype = "String",
-                direction = "Input"
-            )
-        landsat_number.filter.list = ['Landsat8', 'Landsat7']
-
         pre_flood = arcpy.Parameter(
-                displayName= "Folder Data sebelum banjir (pre flood)",
+                displayName= "Data sebelum banjir (pre flood)",
                 name = "pre_flood",
                 datatype = "DEFolder",
                 parameterType = "Required",
                 direction = "Input"
             )
-
         post_flood = arcpy.Parameter(
-                displayName= "Folder Data setelah banjir (post flood)",
+                displayName= "Data setelah banjir (post flood)",
                 name = "post_flood",
                 datatype = "DEFolder",
                 parameterType = "Required",
                 direction = "Input"
             )
-
         threshold_opt1 = arcpy.Parameter(
                 displayName= "Default",
                 name = "threshold_opt1",
                 datatype = "GPBoolean",
+                
                 direction = "Input"
             )
-
         threshold_opt1.category = "Options"
-        
+        # Second parameter
         threshold_default = arcpy.Parameter(
                 displayName="Default by source",
                 name="threshold_default",
-                datatype="String",          
+                datatype="Field",
+                
                 direction="Input"
             )
         threshold_default.filter.list = ["Gao(deltaNDWI >= 0.094 ; duringNDWI >= 0.161)", "McFeeters(deltaNDWI >= 0.228 ; duringNDWI >= 0.548)"]
@@ -70,22 +60,23 @@ class Tool(object):
         threshold_opt2 = arcpy.Parameter(
                 displayName= "Define",
                 name = "threshold_opt2",
-                datatype = "GPBoolean",           
+                datatype = "GPBoolean",
+                
                 direction = "Input"
             )
         threshold_opt2.category = "Options"
-
         threshold_define1 = arcpy.Parameter(
                 displayName="Delta NDWI",
                 name="threshold_define1",
-                datatype="String",              
+                datatype="String",
+                
                 direction="Input"
             )
-
         threshold_define2 = arcpy.Parameter(
                 displayName="Post NDWI",
                 name="threshold_define2",
-                datatype="String",             
+                datatype="String",
+                
                 direction="Input"
             )
         threshold_define1.enabled = False
@@ -100,7 +91,6 @@ class Tool(object):
         #         parameterType = "Required",
         #         direction = "Input"
         #     )
-
         out_process = arcpy.Parameter(
                 displayName = "Folder keluaran hasil praproses",
                 name = "out_process",
@@ -108,17 +98,21 @@ class Tool(object):
                 parameterType = "Required",
                 direction = "Output"
             )
-
         projection = arcpy.Parameter(
-                displayName= "Shapefile projeksi data ke utm sesuai zona",
+                displayName= "Projeksi data (ke utm sesuai zona)",
                 name = "projection",
                 datatype = "DEShapefile",
                 parameterType = "Required",
                 direction = "Input"
             )
         #params = [pre_flood, post_flood, projection, out_process]
-        params = [landsat_number, pre_flood, post_flood, threshold_opt1, threshold_default, threshold_opt2, threshold_define1, threshold_define2, out_process, projection]
+        params = [pre_flood, post_flood, threshold_opt1, threshold_default, threshold_opt2, threshold_define1, threshold_define2, out_process, projection]
 
+
+        # if self.params[2].value:
+        #     self.params[3].enabled = True
+        # else:
+        #     self.params[3].enabled = False
         return params
 
 
@@ -131,31 +125,25 @@ class Tool(object):
         """Modify the values and properties of parameters before internal
         validation is performed.  This method is called whenever a parameter
         has been changed."""
+        tOpt1 = parameters[2]
+        tValue1 = parameters[3]
 
-
-        tOpt1 = parameters[3]
-        tValue1 = parameters[4]
-
-        tOpt2 = parameters[5]
-        tValue21 = parameters[6]
-        tValue22 = parameters[7]
+        tOpt2 = parameters[4]
+        tValue21 = parameters[5]
+        tValue22 = parameters[6]
 
         if tOpt1.value == True:
             tValue1.enabled = True
-            tOpt2.enabled = False
            
         else:
             tValue1.enabled = False
-            tOpt2.enabled = True
 
         if tOpt2.value == True:
             tValue21.enabled = True
             tValue22.enabled = True
-            tOpt1.enabled = False
         else:
             tValue21.enabled = False
             tValue22.enabled = False
-            tOpt1.enabled = True
 
         return
 
@@ -167,11 +155,10 @@ class Tool(object):
     def execute(self, parameters, messages):
 
         utm_zone12 = "PROJCS['NAD_1983_UTM_Zone_12N',GEOGCS['GCS_North_American_1983',DATUM['D_North_American_1983',SPHEROID['GRS_1980',6378137.0,298.257222101]],PRIMEM['Greenwich',0.0],UNIT['Degree',0.0174532925199433]],PROJECTION['Transverse_Mercator'],PARAMETER['False_Easting',500000.0],PARAMETER['False_Northing',0.0],PARAMETER['Central_Meridian',-111.0],PARAMETER['Scale_Factor',0.9996],PARAMETER['Latitude_Of_Origin',0.0],UNIT['Meter',1.0]]", "NEAREST", "30", "WGS_1984_(ITRF00)_To_NAD_1983", "", "PROJCS['WGS_84_UTM_zone_12N',GEOGCS['GCS_WGS_1984',DATUM['D_WGS_1984',SPHEROID['WGS_1984',6378137.0,298.257223563]],PRIMEM['Greenwich',0.0],UNIT['Degree',0.0174532925199433]],PROJECTION['Transverse_Mercator'],PARAMETER['false_easting',500000.0],PARAMETER['false_northing',0.0],PARAMETER['central_meridian',-111.0],PARAMETER['scale_factor',0.9996],PARAMETER['latitude_of_origin',0.0],UNIT['Meter',1.0]]"
-        projection = utm_zone12
         """The source code of the tool."""
-
         pre_flood = parameters[0].valueAsText
         post_flood = parameters[1].valueAsText
+        projection = utm_zone12
         out_process = parameters[2].valueAsText
         inFC = parameters[3].valueAsText
         SR = arcpy.Describe(inFC).spatialReference
