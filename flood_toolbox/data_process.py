@@ -1,21 +1,80 @@
 #!/usr/bin/python
 # Filename: landsat8_modif.py
-
+import arcpy as ap
+import numpy as np
+import os, sys, time, glob, math, string
+#from ap import env
+from arcpy.sa import *
+#WGS_1984_UTM_Zone_49N
+##  Function to process a landsat scene directory
+##
+##  @output : Reprojected bands, TOA Reflectance, Calculated NDWI
 class LicenseError(Exception):
     pass
 
 class SpatialRefProjError (Exception):
     pass
 
-import arcpy as ap
-import numpy as np
-import os, sys, time, glob, math, string
-#from arcpy import env
-from arcpy.sa import *
-#WGS_1984_UTM_Zone_49N
-##  Function to process a landsat scene directory
-##
-##  @output : Reprojected bands, TOA Reflectance, Calculated NDWI
+
+class masker:
+    '''Provides access to functions that produces masks from remote sensing image, according to its bit structure.'''
+
+    def __init__(self, band, *var):
+        self.bandarray = band
+
+    def getmask(self, bitpos, bitlen, value, cummulative):
+        '''Generates mask with given bit information.
+        Parameters
+            bitpos      -   Position of the specific QA bits in the value string.
+            bitlen      -   Length of the specific QA bits.
+            value       -   A value indicating the desired condition.
+        '''
+        lenstr = ''
+        for i in range(bitlen):
+            lenstr += '1'
+        bitlen = int(lenstr, 2)
+
+        if type(value) == unicode:
+            value = int(value, 2)
+
+        posValue = bitlen << bitpos
+        conValue = value << bitpos
+
+        if cummulative:
+            mask = (self.bandarray & posValue) >= conValue
+        else:
+            mask = (self.bandarray & posValue) == conValue
+
+        return mask.astype(int)
+
+def mask_cloud(path, masktype, confidence, cummulative, out):
+    convalue = {'High' : 3, 'Medium' : 2, 'Low' : 1, 'None' : 0}
+    maskvalue = {'Cloud' : 14, 'Cirrus' : 12, 'Snow' : 10, 'Vegetation' : 8, 'Water' : 4}
+
+    # rasterlayer = ap.GetParameterAsText(0)
+    # masktype = ap.GetParameterAsText(1)
+    # confidence = ap.GetParameterAsText(2)
+    # cummulative = ap.GetParameterAsText(3) == 'true'
+    # output = ap.GetParameterAsText(4)
+
+    ap.env.workspace = path
+    output = out+'/mask_cloud_'+str(os.path.basename(path))+'.TIF'
+
+    raster = ap.Raster(ap.ListRasters('*BQA.TIF')[0])
+    rasterarray = ap.RasterToNumPyArray(raster)
+    bitmasker = masker(rasterarray)
+    outarray = bitmasker.getmask(maskvalue[masktype], 2, convalue[confidence], cummulative)
+
+    outraster = ap.NumPyArrayToRaster(outarray, 
+                                         ap.Point(raster.extent.XMin, raster.extent.YMin),
+                                         raster,
+                                         raster,
+                                         raster.noDataValue)
+    outraster.save(output)
+
+    #out2 = Con((mask == 0), band2, 1)
+
+
 def process_landsat(path, projection, out, flag, output=None):
     '''Calc/converts TOA Reflectance for each band in the directory
 
@@ -59,11 +118,12 @@ def process_landsat(path, projection, out, flag, output=None):
         toa = os.path.join(output, 'toa')
         
         reproject(path, output, projection, mtl)
-        calc_toa(output, toa, mtl)
-        stack_bands(toa, mtl)
-        pan_sharpen(toa, mtl)
-        spatial_filter(toa, mtl)
-        calc_ndwi(toa, mtl)
+        cloud_mask(path, out, output)
+        #calc_toa(output, toa, mtl)
+        #stack_bands(toa, mtl)
+        #pan_sharpen(toa, mtl)
+        #spatial_filter(toa, mtl)
+        #calc_ndwi(toa, mtl)
 
     finally:
         print "\n Completed processing landsat data for scene " + str(mtl['L1_METADATA_FILE']['LANDSAT_SCENE_ID'])
@@ -129,6 +189,19 @@ def reproject(input_dir, output_dir, projection, meta):
 
     finally:
         checkin_Ext("Spatial")
+
+def cloud_mask(path, out, output):
+    ap.env.workspace = output
+
+    rasters = ap.ListRasters('*.TIF')
+    mask = Raster(out+'/mask_cloud_'+str(os.path.basename(path))+'.TIF')
+
+    for i in range(len(rasters)):
+
+        raster = Raster(rasters[i])
+        output_mask = 'cloud_' + str(rasters[i])
+        out_mask = Con((mask == 0), raster, 1)
+        out_mask.save(output_mask)
 
 
 def calc_toa(input_dir, output_dir, meta):
@@ -269,7 +342,7 @@ def calc_ndwi(path, meta):
     finally:
         checkin_Ext("Spatial")
         
-        # arcpy.Delete_management("forGettingLoc")
+        # ap.Delete_management("forGettingLoc")
 
 def diffNDWI(path, pre_flood, post_flood):
     #path = "D:/DataMining/lapan/Deteksi Banjir/LC81200602016168RPI00_Tool1"

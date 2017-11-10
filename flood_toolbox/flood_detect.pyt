@@ -47,59 +47,58 @@ class Tool(object):
                 parameterType = "Required",
                 direction = "Input"
             )
-
+        ###############################################THRESHOLD###################################################
         threshold_opt1 = arcpy.Parameter(
                 displayName= "Default",
                 name = "threshold_opt1",
                 datatype = "GPBoolean",
+                parameterType = "Optional",
                 direction = "Input"
             )
 
-        threshold_opt1.category = "Options"
+        threshold_opt1.category = "Threshold Classification"
         
         threshold_default = arcpy.Parameter(
                 displayName="Default by source",
                 name="threshold_default",
-                datatype="String",          
+                datatype="String",
+                parameterType = "Optional",          
                 direction="Input"
             )
         threshold_default.filter.list = ["Gao(deltaNDWI >= 0.094 ; duringNDWI >= 0.161)", "McFeeters(deltaNDWI >= 0.228 ; duringNDWI >= 0.548)"]
         threshold_default.enabled = False
-        threshold_default.category = "Options"
+        threshold_default.category = "Threshold Classification"
 
         threshold_opt2 = arcpy.Parameter(
                 displayName= "Define",
                 name = "threshold_opt2",
-                datatype = "GPBoolean",           
+                datatype = "GPBoolean", 
+                parameterType = "Optional",          
                 direction = "Input"
             )
-        threshold_opt2.category = "Options"
+        threshold_opt2.category = "Threshold Classification"
 
         threshold_define1 = arcpy.Parameter(
                 displayName="Delta NDWI",
                 name="threshold_define1",
-                datatype="String",              
+                datatype="String",       
+                parameterType = "Optional",       
                 direction="Input"
             )
 
         threshold_define2 = arcpy.Parameter(
                 displayName="Post NDWI",
                 name="threshold_define2",
-                datatype="String",             
+                datatype="String",   
+                parameterType = "Optional",          
                 direction="Input"
             )
         threshold_define1.enabled = False
-        threshold_define1.category = "Options"
+        threshold_define1.category = "Threshold Classification"
         threshold_define2.enabled = False
-        threshold_define2.category = "Options"
+        threshold_define2.category = "Threshold Classification"
         
-        # projection = arcpy.Parameter(
-        #         displayName= "Projeksi data (ke utm sesuai zona)",
-        #         name = "projection",
-        #         datatype = "GPSpatialReference",
-        #         parameterType = "Required",
-        #         direction = "Input"
-        #     )
+        ####################################### END THRESHOLD ######################################################
 
         out_process = arcpy.Parameter(
                 displayName = "Folder keluaran hasil praproses",
@@ -116,8 +115,31 @@ class Tool(object):
                 parameterType = "Required",
                 direction = "Input"
             )
-        #params = [pre_flood, post_flood, projection, out_process]
-        params = [landsat_number, pre_flood, post_flood, threshold_opt1, threshold_default, threshold_opt2, threshold_define1, threshold_define2, out_process, projection]
+
+        ####################################### CLOUD MASK ######################################################
+        masktype_list = arcpy.Parameter(
+                displayName= "Mask Type",
+                name = "masktype_list",
+                datatype = "String",
+                direction = "Input"
+            )
+        masktype_list.filter.list = ['Cloud', 'Cirrus', 'Snow', 'Vegetation', 'Water']
+        masktype_list.category = 'Cloud Masking'
+
+
+        confidence_list = arcpy.Parameter(
+                displayName= "Confidence Level",
+                name = "confidence_list",
+                datatype = "String",
+                direction = "Input"
+            )
+        confidence_list.filter.list = ['High', 'Medium', 'Low', 'None']
+        confidence_list.category = 'Cloud Masking'
+
+        ################################### END CLOUD MASK ######################################################
+        
+        params = [landsat_number, pre_flood, post_flood, threshold_opt1, threshold_default, threshold_opt2, threshold_define1, 
+        threshold_define2, out_process, projection, masktype_list, confidence_list]
 
         return params
 
@@ -170,21 +192,27 @@ class Tool(object):
         projection = utm_zone12
         """The source code of the tool."""
 
-        pre_flood = parameters[0].valueAsText
-        post_flood = parameters[1].valueAsText
-        out_process = parameters[2].valueAsText
-        inFC = parameters[3].valueAsText
+        pre_flood = parameters[1].valueAsText
+        post_flood = parameters[2].valueAsText
+        out_process = parameters[8].valueAsText
+        inFC = parameters[9].valueAsText
         SR = arcpy.Describe(inFC).spatialReference
-        
+
+        masktype = parameters[10].valueAsText
+        confidence = parameters[11].valueAsText
+        cummulative = 'false'
+
         # messages.addMessage(
         #     '\n'+pre_flood+'\n'+post_flood+'\n'+projection+'\n'
         # )
         
         os.mkdir(out_process)
+        dp.mask_cloud(pre_flood, masktype, confidence, cummulative, out_process)
+        dp.mask_cloud(post_flood, masktype, confidence, cummulative, out_process)
         dp.process_landsat(pre_flood, SR, out_process, "_PreFlood")
         dp.process_landsat(post_flood, SR, out_process, "_PostFlood")
-        dp.diffNDWI(out_process, os.path.basename(pre_flood), os.path.basename(post_flood))
-        dp.pixelExtraction(out_process, os.path.basename(pre_flood), os.path.basename(post_flood))
-        dp.createRandomPoint(out_process)
-        dp.valuesToPoint(out_process)
+        # dp.diffNDWI(out_process, os.path.basename(pre_flood), os.path.basename(post_flood))
+        # dp.pixelExtraction(out_process, os.path.basename(pre_flood), os.path.basename(post_flood))
+        # dp.createRandomPoint(out_process)
+        # dp.valuesToPoint(out_process)
         return
