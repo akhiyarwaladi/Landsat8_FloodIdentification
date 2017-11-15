@@ -192,6 +192,7 @@ class Tool(object):
         projection = utm_zone12
         """The source code of the tool."""
 
+        data_type = parameters[0].valueAsText
         pre_flood = parameters[1].valueAsText
         post_flood = parameters[2].valueAsText
         out_process = parameters[8].valueAsText
@@ -202,17 +203,39 @@ class Tool(object):
         confidence = parameters[11].valueAsText
         cummulative = 'false'
 
+        threshold_opt1 = parameters[3].valueAsText
+        threshold_opt2 = parameters[5].valueAsText
+
+        if(threshold_opt1 == 'true'):
+
+            messages.addMessage(
+                '\n'+'DEFAULT THRESHOLD'+'\n'
+            )
+            if(parameters[4].valueAsText == "Gao(deltaNDWI >= 0.094 ; duringNDWI >= 0.161)"):
+
+                deltaNDWI = "0.094"
+                NDWIduring = "0.161"
+            else:
+                deltaNDWI = "0.228"
+                NDWIduring = "0.548"
+        else:
+            messages.addMessage(
+                '\n'+'DEFINE THRESHOLD'+'\n'
+            )
+            deltaNDWI = parameters[6].valueAsText
+            NDWIduring = parameters[7].valueAsText
+
         # messages.addMessage(
         #     '\n'+pre_flood+'\n'+post_flood+'\n'+projection+'\n'
         # )
         
         os.mkdir(out_process)
-        dp.mask_cloud(pre_flood, masktype, confidence, cummulative, out_process)
-        dp.mask_cloud(post_flood, masktype, confidence, cummulative, out_process)
-        dp.process_landsat(pre_flood, SR, out_process, "_PreFlood")
-        dp.process_landsat(post_flood, SR, out_process, "_PostFlood")
-        # dp.diffNDWI(out_process, os.path.basename(pre_flood), os.path.basename(post_flood))
-        # dp.pixelExtraction(out_process, os.path.basename(pre_flood), os.path.basename(post_flood))
+        dp.mask_cloud(pre_flood, masktype, confidence, cummulative, out_process, SR)
+        dp.mask_cloud(post_flood, masktype, confidence, cummulative, out_process, SR)
+        dp.process_landsat(pre_flood, SR, out_process, "_PreFlood", data_type)
+        dp.process_landsat(post_flood, SR, out_process, "_PostFlood", data_type)
+        dp.diffNDWI(out_process, os.path.basename(pre_flood), os.path.basename(post_flood))
+        dp.pixelExtraction(out_process, os.path.basename(pre_flood), os.path.basename(post_flood))
         # dp.createRandomPoint(out_process)
         # dp.valuesToPoint(out_process)
         return

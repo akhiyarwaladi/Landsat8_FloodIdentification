@@ -47,7 +47,7 @@ class masker:
 
         return mask.astype(int)
 
-def mask_cloud(path, masktype, confidence, cummulative, out, project):
+def mask_cloud(path, masktype, confidence, cummulative, out):
     convalue = {'High' : 3, 'Medium' : 2, 'Low' : 1, 'None' : 0}
     maskvalue = {'Cloud' : 14, 'Cirrus' : 12, 'Snow' : 10, 'Vegetation' : 8, 'Water' : 4}
 
