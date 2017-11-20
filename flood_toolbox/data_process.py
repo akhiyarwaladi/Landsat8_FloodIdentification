@@ -3,9 +3,8 @@
 import arcpy as ap
 import numpy as np
 import os, sys, time, glob, math, string
-#from ap import env
 from arcpy.sa import *
-#WGS_1984_UTM_Zone_49N
+
 ##  Function to process a landsat scene directory
 ##
 ##  @output : Reprojected bands, TOA Reflectance, Calculated NDWI
@@ -14,7 +13,6 @@ class LicenseError(Exception):
 
 class SpatialRefProjError (Exception):
     pass
-
 
 class masker:
     '''Provides access to functions that produces masks from remote sensing image, according to its bit structure.'''
@@ -47,20 +45,13 @@ class masker:
 
         return mask.astype(int)
 
-def mask_cloud(path, masktype, confidence, cummulative, out, project):
+def mask_cloud(path, masktype, confidence, cummulative, out):
     convalue = {'High' : 3, 'Medium' : 2, 'Low' : 1, 'None' : 0}
     maskvalue = {'Cloud' : 14, 'Cirrus' : 12, 'Snow' : 10, 'Vegetation' : 8, 'Water' : 4}
-
-    # rasterlayer = ap.GetParameterAsText(0)
-    # masktype = ap.GetParameterAsText(1)
-    # confidence = ap.GetParameterAsText(2)
-    # cummulative = ap.GetParameterAsText(3) == 'true'
-    # output = ap.GetParameterAsText(4)
 
     ap.env.workspace = out
     output = out+'/mask_cloud_'+str(os.path.basename(path))+'.TIF'
 
-    #raster = ap.Raster(ap.ListRasters('*BQA.TIF')[0])
     raster = ap.Raster(path + '/' + str(os.path.basename(path))+'_BQA.TIF')
     rasterarray = ap.RasterToNumPyArray(raster)
     bitmasker = masker(rasterarray)
@@ -72,9 +63,7 @@ def mask_cloud(path, masktype, confidence, cummulative, out, project):
                                          raster,
                                          raster.noDataValue)
 
-    #ap.ProjectRaster_management(outraster, output, projection)
     outraster.save(output)
-    #reproject_mask_cloud(path, out, project)
 
 def reproject_mask_cloud(path, out, project):
     mask = out+'/mask_cloud_'+str(os.path.basename(path))+'.TIF'
@@ -82,6 +71,7 @@ def reproject_mask_cloud(path, out, project):
     ap.ProjectRaster_management(mask, output, project)
 
 def process_landsat(path, projection, out, flag, data_type, output=None):
+
     '''Calc/converts TOA Reflectance for each band in the directory
 
         @type path:     c{str}
@@ -120,15 +110,15 @@ def process_landsat(path, projection, out, flag, data_type, output=None):
     mtl = parse_mtl(path)
     
     try:
-        ## Create directory in Processed out put for the TOA Reflectance
         toa = os.path.join(output, 'toa')
         Fcloud = os.path.join(output, 'cloud')
+
         reproject(path, output, projection, mtl)
         cloud_mask(path, out, output)
         calc_toa(Fcloud, toa, mtl)
-        stack_bands(toa, mtl)
-        pan_sharpen(toa, mtl)
-        spatial_filter(toa, mtl)
+        stack_bands(toa, mtl, data_type)
+        pan_sharpen(toa, mtl, data_type)
+        spatial_filter(toa, mtl, path)
         calc_ndwi(toa, mtl, data_type)
 
     finally:
@@ -136,33 +126,6 @@ def process_landsat(path, projection, out, flag, data_type, output=None):
         ap.AddMessage("\n Completed processing landsat data for scene " + str(mtl['L1_METADATA_FILE']['LANDSAT_SCENE_ID']))
 
 def reproject(input_dir, output_dir, projection, meta):
-    ''' Reproject raster band
-
-        @param   input_dir: landsat 8 directory after unzip
-        @type    input_dir: c{str}
-        @param   meta: metadata parsed from MTL file
-        @type    meta: dictionary
-        @return  output_dir: output directory path
-    '''
-
-   ##  Setting output directory id not defined
-
-    # if output_dir is None:
-    #     output_dir = os.path.join(input_dir, "processed")
-    #     if os.path.exists(output_dir):
-    #         sys.exit(0)
-    #         print "\nDirectory for reprojection already Exisits"
-    #     else:
-    #         os.mkdir(output_dir)
-    #         print "\nCreated the output directory: " + output_dir
-    # else:
-    #     if os.path.exists(output_dir):
-    #         sys.exit(0)
-    #         print "\nDirectory for reprojection already Exisits"
-    #     else:
-    #         os.mkdir(output_dir)
-    #         print "\nCreated the output directory: " + output_dir
-
     
     ap.env.workspace = input_dir
 
@@ -170,11 +133,7 @@ def reproject(input_dir, output_dir, projection, meta):
     ms_bands = [band for band in rasters if (band_nmbr(band) != None)]
     
     #ms_bands = [band for band in rasters if (band_nmbr(band) >= 2 and band_nmbr(band) <=8)]
-    #bqa_band = ms_bands[0]
     bqa_band = [band for band in rasters if (band_nmbr(band) == None)][0]
-
-    ap.AddMessage(ms_bands)
-    ap.AddMessage(bqa_band)
     
     try:
         #checkout_Ext("Spatial")
@@ -186,9 +145,9 @@ def reproject(input_dir, output_dir, projection, meta):
             outCon = ap.sa.Con(ap.sa.Raster(bqa_band) != 1, ap.sa.Raster(band))
             out_band = os.path.join(output_dir, band)
 
-            ap.AddMessage(outCon)
-            ap.AddMessage(out_band)
-            ap.AddMessage(projection)
+            # ap.AddMessage(outCon)
+            # ap.AddMessage(out_band)
+            # ap.AddMessage(projection)
 
             print "Reprojecting band"
             ap.AddMessage("Reprojecting band")
@@ -290,7 +249,7 @@ def calc_toa(input_dir, output_dir, meta):
         checkin_Ext("Spatial")
 
 
-def stack_bands(path, meta):
+def stack_bands(path, meta, data_type):
     '''Stack Landsat bands 1 - 11 within a directory
 
         @param output: path of output reflectance.
@@ -302,14 +261,23 @@ def stack_bands(path, meta):
 
     ap.env.workspace = path
     rasters = ap.ListRasters()
-    rgb_rasters = [rgb for rgb in rasters if band_nmbr(rgb) >= 2 and band_nmbr(rgb) <= 5]
+
+    if(data_type == "Landsat8"):
+        rgb_rasters = [rgb for rgb in rasters if band_nmbr(rgb) >= 2 and band_nmbr(rgb) <= 5]
+
+    else:
+        rgb_rasters = [rgb for rgb in rasters if band_nmbr(rgb) >= 1 and band_nmbr(rgb) <= 4]
+
+    print "\nRGB Bands:"
+    print " " + str(rgb_rasters)
+
     out_stack = str(meta['L1_METADATA_FILE']['LANDSAT_SCENE_ID']) + 'STACK_RGB.img'
 
     ap.AddMessage("Stacking R, G, B, and NIR bands")
 
     ap.CompositeBands_management(rgb_rasters, out_stack)    
-    # print "\nRGB Bands:"
-    # print " " + str(rgb_rasters)
+
+
     print "\nComposite Stack Complete!"
     ap.AddMessage("Composite Stack Complete")
 
@@ -332,22 +300,23 @@ def calc_ndwi(path, meta, data_type):
         green = Float(ap.sa.Raster(ap.ListRasters('*B3.img')[0]))
         red = Float(ap.sa.Raster(ap.ListRasters('*B4.img')[0]))
         nir = Float(ap.sa.Raster(ap.ListRasters('*B5.img')[0]))
-    #swir = Float(ap.sa.Raster(ap.ListRasters('*B6.img')[0]))
+
     else:
         green = Float(ap.sa.Raster(ap.ListRasters('*B2.img')[0]))
         red = Float(ap.sa.Raster(ap.ListRasters('*B3.img')[0]))
         nir = Float(ap.sa.Raster(ap.ListRasters('*B4.img')[0]))
+
     try:
         #checkout_Ext("Spatial")
         
         print "\nCalculating NDWI"
         ap.AddMessage("\nCalculating NDWI")
-        #ndwi = (green-nir)/(green+nir)
+
         ndwi = (green-nir) / (green+nir)
         ndvi = (nir-red) / (nir+red)
 
         print "\nSaving NDWI As: " + str(output_ndwi)
-        ap.AddMessage("\nSaving NDWI As: " + str(output_ndvi))
+        ap.AddMessage("\nSaving NDVI As: " + str(output_ndvi))
         ndwi.save(output_ndwi)
         ndvi.save(output_ndvi)
 
@@ -366,7 +335,7 @@ def calc_ndwi(path, meta, data_type):
         # ap.Delete_management("forGettingLoc")
 
 def diffNDWI(path, pre_flood, post_flood):
-    #path = "D:/DataMining/lapan/Deteksi Banjir/LC81200602016168RPI00_Tool1"
+
     ap.env.workspace = path
     output_ndwi_diff = 'DIFF_NDWI.img'
     output_ndvi_diff = 'DIFF_NDVI.img'
@@ -389,7 +358,7 @@ def diffNDWI(path, pre_flood, post_flood):
     
     ap.AddMessage("\nFinished saved NDWI and NDVI different")
 
-def pixelExtraction(path, pre_flood, post_flood):
+def pixelExtraction(path, pre_flood, post_flood, NDWIDiff, NDWIPost):
     ap.env.workspace = path
     output_permWater = 'PERMANENT_WATER.img'
     output_floodWater = 'FLOOD_WATER.img'
@@ -412,60 +381,15 @@ def pixelExtraction(path, pre_flood, post_flood):
     ndviPost = ap.sa.Raster(path+"/processed_PostFlood/toa/"+post_flood+"_NDVI.img")
     ndviPre = ap.sa.Raster(path+"/processed_PreFlood/toa/"+pre_flood+"_NDVI.img")
 
-    # a = 0.6
-    # b = 0.4
-    # outraster = Con((ndwiDiff >= 0.6) & (ndwiDiff !=0.00), ndwiDiff)
-    # if( (ndwiPre >= -0.05) & (redPre <= 0.35) ):
-
-    #     outraster = Con((ndwiPre >= -0.05) & (redPre <= 0.35), ndwiPost)
-    #     outraster.save(output)
-    # else:
-    #     if ( (ndwiPost >= 0.1) & (ndviPost <= 0.1) ):
-    #         outraster = Con((ndwiPost >= 0.1) & (ndviPost <= 0.1), ndwiPost)
-    #         outraster.save(output2)
-    #     else:
-    #         if( (ndwiDiff >= 0) & (nirPost <= 0.10) ):
-    #             if ( ndviDiff < 0 ):
-    #                 outraster = Con()
-    #                 outraster.save(output3)
-    #             else:
-    #                 outraster.save(output4)
-    #         else:
-    #             outraster.save(output4)
 
     ap.AddMessage("\nBegin condition data class")
 
-    # ###### PERMANENT WATER ###########
-    # mask1_step1 = ndwiPre >= -0.05
-    # mask1_step2 = redPre <= 0.35
-    # mask1_prefinal = Int(mask1_step1) + Int(mask1_step2)
-    # mask1_final = mask1_prefinal == 2
-    # mask1_final.save(output_permWater)
-
-    # ###### FLOOD WATER #######
-    # mask2_step1 = ndwiPost >= 0.1
-    # mask2_step2 = ndviPost <= 0.1
-    # mask2_prefinal = (Int(mask2_step1) + Int(mask2_step2)) - mask1_prefinal
-    # mask2_final = mask2_prefinal == 3
-    # mask2_final.save(output_floodWater)
-
-    # ###### NON FLOOD AREA ######
-    # mask3_step1 = ndwiDiff >= 0
-    # mask3_step2 = nirPost <= 0.10
-    # mask3_prefinal = (Int(mask3_step1) + Int(mask3_step2)) - mask2_prefinal
-    # mask3_final = mask3_prefinal == 3
-    # mask3_final.save(output_nonFlood)
-
-    out1 = Con (((ndwiDiff >= 0.094) & (ndwiPost >= 0.161)), 1, 0)
-    out2 = Con (((ndwiDiff >= 0.228) & (ndwiPost >= 0.548)), 1, 0)
-
-    out1.save(outFlood1)
-    out2.save(outFlood2)
-    out2.save(outFinal)
+    out1 = Con (((ndwiDiff >= NDWIDiff) & (ndwiPost >= NDWIPost)), 1, 0)
+    out1.save(outFinal)
 
     ap.AddMessage("\nFinished grouping data area")
     
-def spatial_filter(path, meta):
+def spatial_filter(path, meta, filterpath):
     ap.env.workspace = path
     out_filter = str(meta['L1_METADATA_FILE']['LANDSAT_SCENE_ID']) + 'STACK_FILTER.img'
     print out_filter
@@ -475,19 +399,14 @@ def spatial_filter(path, meta):
     ap.AddMessage("Begining Spatial Filtering")
 
     # Check out the ArcGIS Spatial Analyst extension license
-    #ap.CheckOutExtension("Spatial")
-
-    # Set local variables
-    #inRaster = "elevation"
-    #neighborhood = NbrIrregular("D:/DataMining/lapan/dataClone_2/IrregularKernel.txt")
-    #neighborhood = NbrRectangle(3, 3, "CELL")
+    # ap.CheckOutExtension("Spatial")
 
     rasters = ap.ListRasters()
     inRaster = [img for img in rasters if 'STACK_PANSHARP.img' in img]
 
     # Execute FocalStatistics
     outFocalStatistics = ap.sa.FocalStatistics(inRaster[0], ap.sa.NbrIrregular(
-        "D:/DataMining/lapan/dataClone_2/high-pass.txt"))
+        filterpath + "/high-pass.txt"))
 
     # Save the output 
     outFocalStatistics.save(out_filter)
@@ -496,7 +415,7 @@ def spatial_filter(path, meta):
     print "Spatial Filtering Complete"
     ap.AddMessage("Spatial Filtering Complete")
 
-def final_spatial_filter(path, meta):
+def final_spatial_filter(path, meta, filterpath):
     ap.env.workspace = path
     out_filter = str(meta['L1_METADATA_FILE']['LANDSAT_SCENE_ID']) + 'FINAL_FILTER.img'
     print out_filter
@@ -511,12 +430,7 @@ def final_spatial_filter(path, meta):
     # Check out the ArcGIS Spatial Analyst extension license
     #ap.CheckOutExtension("Spatial")
 
-    # Set local variables
-    #inRaster = "elevation"
-    #neighborhood = NbrIrregular("D:/DataMining/lapan/dataClone_2/IrregularKernel.txt")
-    #neighborhood = NbrRectangle(3, 3, "CELL")
-    # Execute FocalStatistics
-    outFocalStatistics = ap.sa.FocalStatistics(inRaster[0], ap.sa.NbrIrregular("D:/DataMining/lapan/dataClone_2/majority.txt"))
+    outFocalStatistics = ap.sa.FocalStatistics(inRaster[0], ap.sa.NbrIrregular(filterpath + "/majority.txt"))
 
     # Save the output 
     outFocalStatistics.save(out_filter)
@@ -526,7 +440,7 @@ def final_spatial_filter(path, meta):
     ap.AddMessage("Spatial Filtering Complete")
 
 ## Funtion not built into function "process_landsat"
-def pan_sharpen(path, meta):
+def pan_sharpen(path, meta, data_type):
     '''Use the pan chromatic layer to pan-sharen the Blue, Green, Red, & NIR stack
 
         @param   stack: Input composite image stack
@@ -546,7 +460,11 @@ def pan_sharpen(path, meta):
     print pan
     print ""
     print "Begining Pan Sharpen"
-    ap.CreatePansharpenedRasterDataset_management(rgb[0], "4", "3", "2", "5", out_stack, pan[0], "Brovey") 
+
+    if(data_type == "Landsat8"):
+        ap.CreatePansharpenedRasterDataset_management(rgb[0], "4", "3", "2", "5", out_stack, pan[0], "Brovey") 
+    else:
+        ap.CreatePansharpenedRasterDataset_management(rgb[0], "3", "2", "1", "4", out_stack, pan[0], "Brovey")
 
     print ""
     print "Pan Sharpen Complete"

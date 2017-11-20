@@ -199,6 +199,7 @@ class Tool(object):
         inFC = parameters[9].valueAsText
         SR = arcpy.Describe(inFC).spatialReference
 
+
         masktype = parameters[10].valueAsText
         confidence = parameters[11].valueAsText
         cummulative = 'false'
@@ -213,11 +214,11 @@ class Tool(object):
             )
             if(parameters[4].valueAsText == "Gao(deltaNDWI >= 0.094 ; duringNDWI >= 0.161)"):
 
-                deltaNDWI = "0.094"
-                NDWIduring = "0.161"
+                deltaNDWI = 0.094
+                NDWIduring = 0.161
             else:
-                deltaNDWI = "0.228"
-                NDWIduring = "0.548"
+                deltaNDWI = 0.228
+                NDWIduring = 0.548
         else:
             messages.addMessage(
                 '\n'+'DEFINE THRESHOLD'+'\n'
@@ -230,12 +231,12 @@ class Tool(object):
         # )
         
         os.mkdir(out_process)
-        dp.mask_cloud(pre_flood, masktype, confidence, cummulative, out_process, SR)
-        dp.mask_cloud(post_flood, masktype, confidence, cummulative, out_process, SR)
+        dp.mask_cloud(pre_flood, masktype, confidence, cummulative, out_process)
+        dp.mask_cloud(post_flood, masktype, confidence, cummulative, out_process)
         dp.process_landsat(pre_flood, SR, out_process, "_PreFlood", data_type)
         dp.process_landsat(post_flood, SR, out_process, "_PostFlood", data_type)
         dp.diffNDWI(out_process, os.path.basename(pre_flood), os.path.basename(post_flood))
-        dp.pixelExtraction(out_process, os.path.basename(pre_flood), os.path.basename(post_flood))
+        dp.pixelExtraction(out_process, os.path.basename(pre_flood), os.path.basename(post_flood), deltaNDWI, NDWIduring)
         # dp.createRandomPoint(out_process)
         # dp.valuesToPoint(out_process)
         return
