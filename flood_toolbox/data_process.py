@@ -171,6 +171,7 @@ def cloud_mask(path, out, output):
     rasters = ap.ListRasters('*.TIF')
     mask = Raster(out+'/mask_cloud_'+str(os.path.basename(path))+'.TIF')
 
+    ap.AddMessage("Begin masking cloud")
     for i in range(len(rasters)):
 
         raster = Raster(rasters[i])
@@ -179,6 +180,7 @@ def cloud_mask(path, out, output):
         out_mask = Con((mask == 0), raster)
         out_mask.save(os.path.join(cloud, output_mask))
 
+    ap.AddMessage("Finished masking cloud")
 
 def calc_toa(input_dir, output_dir, meta):
     '''Raster Algebra to run reflectance equation
@@ -332,7 +334,6 @@ def calc_ndwi(path, meta, data_type):
     finally:
         checkin_Ext("Spatial")
         
-        # ap.Delete_management("forGettingLoc")
 
 def diffNDWI(path, pre_flood, post_flood):
 
@@ -384,7 +385,7 @@ def pixelExtraction(path, pre_flood, post_flood, NDWIDiff, NDWIPost):
 
     ap.AddMessage("\nBegin condition data class")
 
-    out1 = Con (((ndwiDiff >= NDWIDiff) & (ndwiPost >= NDWIPost)), 1, 0)
+    out1 = Con (((ndwiDiff >= float(NDWIDiff)) & (ndwiPost >= float(NDWIPost))), 1, 0)
     out1.save(outFinal)
 
     ap.AddMessage("\nFinished grouping data area")
@@ -507,6 +508,19 @@ def rasterToVector(path, meta):
 
     ap.RasterToPolygon_conversion(inRaster[0], out_vector, "NO_SIMPLIFY", field)
 
+def maskOutFinal(outPath, maskPath):
+    # Set local variables
+    inRaster = outPath + "/out_final.img"
+    inMaskData = maskPath + "/INDONESIA_PROP.shp"
+
+    # Check out the ArcGIS Spatial Analyst extension license
+    # arcpy.CheckOutExtension("Spatial")
+
+    # Execute ExtractByMask
+    outExtractByMask = ExtractByMask(inRaster, inMaskData)
+
+    # Save the output 
+    outExtractByMask.save( outPath + "/out_final_mask.img")
 
 ##
 ##  Helper FUnctions

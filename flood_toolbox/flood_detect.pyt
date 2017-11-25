@@ -239,4 +239,5 @@ class Tool(object):
         dp.pixelExtraction(out_process, os.path.basename(pre_flood), os.path.basename(post_flood), deltaNDWI, NDWIduring)
         # dp.createRandomPoint(out_process)
         # dp.valuesToPoint(out_process)
+        dp.maskOutFinal(out_process, pre_flood)
         return

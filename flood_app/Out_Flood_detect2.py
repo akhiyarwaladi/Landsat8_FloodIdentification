@@ -8,6 +8,10 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 import sys
+from PyQt5.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtWidgets import *
+
 import os
 import arcpy
 import data_process as dp
@@ -22,10 +26,6 @@ class Ui_Dialog(QtWidgets.QWidget):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
         Dialog.resize(965, 746)
-        self.progressBar = QtWidgets.QProgressBar(Dialog)
-        self.progressBar.setGeometry(QtCore.QRect(180, 720, 611, 23))
-        self.progressBar.setProperty("value", 24)
-        self.progressBar.setObjectName("progressBar")
         self.groupBox = QtWidgets.QGroupBox(Dialog)
         self.groupBox.setGeometry(QtCore.QRect(60, 320, 411, 301))
         self.groupBox.setObjectName("groupBox")
@@ -55,9 +55,9 @@ class Ui_Dialog(QtWidgets.QWidget):
         self.groupBox_2 = QtWidgets.QGroupBox(Dialog)
         self.groupBox_2.setGeometry(QtCore.QRect(520, 320, 411, 301))
         self.groupBox_2.setObjectName("groupBox_2")
-        self.label_3 = QtWidgets.QLabel(self.groupBox_2)
-        self.label_3.setGeometry(QtCore.QRect(30, 50, 101, 16))
-        self.label_3.setObjectName("label_3")
+        self.label_maskType = QtWidgets.QLabel(self.groupBox_2)
+        self.label_maskType.setGeometry(QtCore.QRect(30, 50, 101, 16))
+        self.label_maskType.setObjectName("label_maskType")
         self.comboBox_maskType = QtWidgets.QComboBox(self.groupBox_2)
         self.comboBox_maskType.setGeometry(QtCore.QRect(30, 80, 191, 22))
         self.comboBox_maskType.setObjectName("comboBox_maskType")
@@ -66,9 +66,9 @@ class Ui_Dialog(QtWidgets.QWidget):
         self.comboBox_maskType.addItem("")
         self.comboBox_maskType.addItem("")
         self.comboBox_maskType.addItem("")
-        self.label_4 = QtWidgets.QLabel(self.groupBox_2)
-        self.label_4.setGeometry(QtCore.QRect(30, 150, 101, 16))
-        self.label_4.setObjectName("label_4")
+        self.label_confidence = QtWidgets.QLabel(self.groupBox_2)
+        self.label_confidence.setGeometry(QtCore.QRect(30, 150, 101, 16))
+        self.label_confidence.setObjectName("label_confidence")
         self.comboBox_confidence = QtWidgets.QComboBox(self.groupBox_2)
         self.comboBox_confidence.setGeometry(QtCore.QRect(30, 180, 191, 22))
         self.comboBox_confidence.setObjectName("comboBox_confidence")
@@ -102,9 +102,9 @@ class Ui_Dialog(QtWidgets.QWidget):
         self.comboBox_landsatType.setObjectName("comboBox_landsatType")
         self.comboBox_landsatType.addItem("")
         self.comboBox_landsatType.addItem("")
-        self.label_5 = QtWidgets.QLabel(self.groupBox_3)
-        self.label_5.setGeometry(QtCore.QRect(560, 30, 71, 16))
-        self.label_5.setObjectName("label_5")
+        self.label_landsatType = QtWidgets.QLabel(self.groupBox_3)
+        self.label_landsatType.setGeometry(QtCore.QRect(560, 30, 71, 16))
+        self.label_landsatType.setObjectName("label_landsatType")
         self.textEdit_shapefile = QtWidgets.QTextEdit(self.groupBox_3)
         self.textEdit_shapefile.setGeometry(QtCore.QRect(0, 160, 401, 31))
         self.textEdit_shapefile.setObjectName("textEdit_shapefile")
@@ -117,12 +117,6 @@ class Ui_Dialog(QtWidgets.QWidget):
         self.pushButton_Cancel = QtWidgets.QPushButton(Dialog)
         self.pushButton_Cancel.setGeometry(QtCore.QRect(520, 660, 93, 28))
         self.pushButton_Cancel.setObjectName("pushButton_Cancel")
-        self.groupBox.raise_()
-        self.groupBox_2.raise_()
-        self.groupBox_3.raise_()
-        self.progressBar.raise_()
-        self.pushButton_OK.raise_()
-        self.pushButton_Cancel.raise_()
 
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
@@ -146,13 +140,13 @@ class Ui_Dialog(QtWidgets.QWidget):
         self.label.setText(_translate("Dialog", "Delta NDWI"))
         self.label_2.setText(_translate("Dialog", "NDWI during"))
         self.groupBox_2.setTitle(_translate("Dialog", "Cloud Mask"))
-        self.label_3.setText(_translate("Dialog", "Mask Type"))
+        self.label_maskType.setText(_translate("Dialog", "Mask Type"))
         self.comboBox_maskType.setItemText(0, _translate("Dialog", "Cloud"))
         self.comboBox_maskType.setItemText(1, _translate("Dialog", "Cirrus"))
         self.comboBox_maskType.setItemText(2, _translate("Dialog", "Snow"))
         self.comboBox_maskType.setItemText(3, _translate("Dialog", "Vegetation"))
         self.comboBox_maskType.setItemText(4, _translate("Dialog", "Water"))
-        self.label_4.setText(_translate("Dialog", "Confidence"))
+        self.label_confidence.setText(_translate("Dialog", "Confidence"))
         self.comboBox_confidence.setItemText(0, _translate("Dialog", "High"))
         self.comboBox_confidence.setItemText(1, _translate("Dialog", "Medium"))
         self.comboBox_confidence.setItemText(2, _translate("Dialog", "Low"))
@@ -177,7 +171,7 @@ class Ui_Dialog(QtWidgets.QWidget):
 "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">outputDirectory</p></body></html>"))
         self.comboBox_landsatType.setItemText(0, _translate("Dialog", "Landsat8"))
         self.comboBox_landsatType.setItemText(1, _translate("Dialog", "Landsat7"))
-        self.label_5.setText(_translate("Dialog", "Jenis Data"))
+        self.label_landsatType.setText(_translate("Dialog", "Jenis Data"))
         self.textEdit_shapefile.setHtml(_translate("Dialog", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
 "p, li { white-space: pre-wrap; }\n"
@@ -228,16 +222,38 @@ class Ui_Dialog(QtWidgets.QWidget):
         self.textEdit_shapefile.setText(fileName)
         #print(fileName)
 
+    def msgbtn(self):
+        print "Button pressed is:"
 
     def executeCode(self):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+
+        msg.setText("Processing data")
+        msg.setInformativeText("Please wait until all process finish")
+        msg.setWindowTitle("Running")
+        msg.setDetailedText("The details are as follows:")
+        msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        msg.buttonClicked.connect(self.msgbtn)
+
+        retval = msg.exec_()
+        print "value of pressed message box button:", retval
+
+        ####################################################################################
         data_type = self.comboBox_landsatType.currentText()
 
         pre_flood = self.textEdit_preFlood.toPlainText()
         post_flood = self.textEdit_postFlood.toPlainText()
         out_process = self.textEdit_outputProcess.toPlainText()
         inFC = self.textEdit_shapefile.toPlainText()
-        
 
+        pre_flood = os.path.normpath(pre_flood)
+        post_flood = os.path.normpath(post_flood)
+        out_process = os.path.normpath(out_process)
+        inFC = os.path.normpath(inFC)
+
+        SR = arcpy.Describe(inFC).spatialReference
+        print(data_type)
         print(pre_flood)
         print(post_flood)
         print(out_process)
@@ -245,7 +261,7 @@ class Ui_Dialog(QtWidgets.QWidget):
         if(self.checkBox_defaultThreshold.isChecked() == True):
 
             print("Default Threshold")
-            if(self.comboBox_defaultThreshold.currentText() == "Gao"):
+            if(self.comboBox_defaultThreshold.currentText() == "Gao(deltaNDWI >= 0.094 ; duringNDWI >= 0.161)"):
                 print("Gao")
                 deltaNDWI = "0.094"
                 NDWIduring = "0.161"
@@ -271,10 +287,13 @@ class Ui_Dialog(QtWidgets.QWidget):
         os.mkdir(out_process)
         dp.mask_cloud(pre_flood, masktype, confidence, cummulative, out_process)
         dp.mask_cloud(post_flood, masktype, confidence, cummulative, out_process)
-        # dp.process_landsat(pre_flood, arcpy.Describe(inFC).spatialReference, out_process, "_PreFlood", data_type)
-        # dp.process_landsat(post_flood, arcpy.Describe(inFC).spatialReference, out_process, "_PostFlood", data_type)
-        # dp.diffNDWI(out_process, os.path.basename(pre_flood), os.path.basename(post_flood))
-        # dp.pixelExtraction(out_process, os.path.basename(pre_flood), os.path.basename(post_flood))
+        dp.process_landsat(pre_flood, SR, out_process, "_PreFlood", data_type)
+        dp.process_landsat(post_flood, SR, out_process, "_PostFlood", data_type)
+        dp.diffNDWI(out_process, os.path.basename(pre_flood), os.path.basename(post_flood))
+        dp.pixelExtraction(out_process, os.path.basename(pre_flood), os.path.basename(post_flood), deltaNDWI, NDWIduring)
+        dp.maskOutFinal(out_process, pre_flood)
+
+        return
 
         
 
@@ -283,4 +302,3 @@ if __name__ == '__main__':
     ex = Ui_Dialog()
     ex.show()
     sys.exit(app.exec_())
-
